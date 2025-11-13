@@ -123,7 +123,7 @@ def merge_and_write():
             current_df["launch_date"] = current_df["launch_date"].dt.strftime("%Y-%m-%d")
         
         # Ensure all required columns exist
-        required_cols = ["id", "name", "description", "url", "category", "source", "launch_date"]
+        required_cols = ["id", "name", "description", "url", "category", "primary_category", "source", "launch_date"]
         for col in required_cols:
             if col not in current_df.columns:
                 current_df[col] = ""

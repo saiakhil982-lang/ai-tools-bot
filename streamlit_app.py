@@ -127,21 +127,51 @@ def get_ai_tools(category=None, q=None):
                 
                 for edge in data.get("data", {}).get("posts", {}).get("edges", []):
                     node = edge["node"]
-                    categories = [t["node"]["name"] for t in node.get("topics", {}).get("edges", [])]
-                    category_str = categories[0] if categories else "general"
-                    
+                    topics = [t["node"]["name"] for t in node.get("topics", {}).get("edges", [])]
+                    category_slugs = [topic.lower().replace(" ", "-") for topic in topics]
+
+                    # Normalize common topic names
+                    category_mapping = {
+                        "fintech": "finance",
+                        "developer-tools": "devtools",
+                        "customer-support": "customer-support",
+                        "content-marketing": "content",
+                        "marketing": "marketing",
+                        "productivity": "productivity",
+                        "finance": "finance",
+                        "ai": "ai",
+                        "machine-learning": "ml",
+                    }
+                    normalized_categories = [category_mapping.get(slug, slug) for slug in category_slugs]
+                    normalized_categories = sorted(set(normalized_categories))
+                    category_str = ",".join(normalized_categories) if normalized_categories else "general"
+                    primary_category = normalized_categories[0] if normalized_categories else "general"
+
                     tools.append({
                         "id": node.get("id", ""),
                         "name": node.get("name", ""),
                         "description": node.get("tagline", ""),
                         "url": node.get("website") or node.get("url", ""),
-                        "category": category_str.lower().replace(" ", "-"),
+                        "category": category_str,
+                        "primary_category": primary_category,
                         "source": "producthunt",
                         "launch_date": node.get("createdAt", "")
                     })
-                
+
                 df = pd.DataFrame(tools)
-                
+
+                if not df.empty:
+                    df["category"] = df["category"].replace({None: "general"}).fillna("general")
+                    if "primary_category" not in df.columns:
+                        df["primary_category"] = (
+                            df["category"].astype(str).str.split(",").str[0].fillna("general")
+                        )
+                    df["source"] = df.get("source", "producthunt")
+                    if "launch_date" in df.columns:
+                        df["launch_date"] = pd.to_datetime(df["launch_date"], errors="coerce")
+                        df = df.sort_values("launch_date", ascending=False, na_position="last")
+                        df["launch_date"] = df["launch_date"].dt.strftime("%Y-%m-%d")
+
                 # Apply filters
                 if category:
                     df = df[df["category"].str.contains(category, case=False, na=False)]
@@ -171,16 +201,26 @@ def get_ai_tools(category=None, q=None):
         for col in required_cols:
             if col not in df.columns:
                 df[col] = ""
-        
+
+        if "primary_category" not in df.columns:
+            df["primary_category"] = (
+                df["category"].astype(str).str.split(",").str[0].fillna("general")
+            )
+
         # Apply filters
         if category:
-            df = df[df["category"].str.contains(category, case=False, na=False)]
+            df = df[df["category"].astype(str).str.contains(category, case=False, na=False)]
         if q:
             df = df[
                 df["name"].str.contains(q, case=False, na=False) |
                 df["description"].str.contains(q, case=False, na=False)
             ]
-        
+
+        if "launch_date" in df.columns:
+            df["launch_date"] = pd.to_datetime(df["launch_date"], errors="coerce")
+            df = df.sort_values("launch_date", ascending=False, na_position="last")
+            df["launch_date"] = df["launch_date"].dt.strftime("%Y-%m-%d")
+
         return df
     except Exception as e:
         st.error(f"❌ Error reading CSV: {str(e)}")
@@ -253,8 +293,12 @@ def summarize_tools(tools_list, user_question):
     
     # Template-based fallback (always works)
     num_tools = len(tools_list)
-    categories = set(tool.get("category", "general") for tool in tools_list)
-    category_str = ", ".join(list(categories)[:3])
+    categories = []
+    for tool in tools_list:
+        category_field = tool.get("category", "general")
+        category_parts = [c.strip() for c in str(category_field).replace(";", ",").split(",") if c.strip()]
+        categories.extend(category_parts or ["general"])
+    category_str = ", ".join(sorted(set(categories))[:4])
     
     top_tools = tools_list[:3]
     tool_names = ", ".join([tool.get("name", "Unknown") for tool in top_tools])
@@ -296,8 +340,12 @@ def render_tools_list(df):
                 st.markdown(f"**Description:** {row.get('description', 'No description available')}")
                 
                 # Category badge
-                category = row.get('category', 'general')
-                st.markdown(f"**Category:** `{category}`")
+                category_field = row.get('category', 'general') or 'general'
+                category_list = [c.strip() for c in str(category_field).replace(';', ',').split(',') if c.strip()]
+                primary_category = row.get('primary_category') or (category_list[0] if category_list else 'general')
+                st.markdown(f"**Primary category:** `{primary_category}`")
+                if len(category_list) > 1:
+                    st.markdown("**Other tags:** " + ", ".join(f"`{c}`" for c in category_list[1:]))
                 
                 # Launch date
                 launch_date = row.get('launch_date', '')
@@ -403,7 +451,11 @@ if prompt := st.chat_input("Ask about AI tools (e.g., 'Show me finance tools' or
             # Use detected category or sidebar filter
             search_category = detected_category or category_filter
             search_query = None if search_category else prompt
-            
+
+            latest_keywords = ["latest", "new", "newest", "recent", "upcoming", "fresh", "today"]
+            if search_query and any(word in prompt_lower for word in latest_keywords):
+                search_query = None
+
             # Search for tools
             tools_df = get_ai_tools(category=search_category, q=search_query)
             

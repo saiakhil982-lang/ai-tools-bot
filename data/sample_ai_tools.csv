@@ -1,10 +1,12 @@
 id,name,description,url,category,source,launch_date
 1,"OpenAI GPT-4","Advanced AI language model for text generation and understanding","https://openai.com/gpt-4","devtools","producthunt","2023-03-14"
 2,"Notion AI","AI-powered workspace for notes, docs, and collaboration","https://www.notion.so/product/ai","productivity","producthunt","2023-02-22"
-3,"Jasper AI","AI writing assistant for marketing and content creation","https://www.jasper.ai","content","producthunt","2021-02-01"
+3,"Jasper AI","AI writing assistant for marketing and content creation","https://www.jasper.ai","content,marketing","producthunt","2021-02-01"
 4,"Stripe AI","AI-powered payment processing and fraud detection","https://stripe.com","finance","producthunt","2010-09-01"
 5,"Intercom AI","AI customer support platform with chatbots","https://www.intercom.com","customer-support","producthunt","2011-06-01"
 6,"Hugging Face","Open-source AI model library and deployment platform","https://huggingface.co","devtools","producthunt","2016-03-01"
 7,"Canva AI","AI-powered design tool for creating graphics and presentations","https://www.canva.com","content","producthunt","2013-01-01"
 8,"GitHub Copilot","AI pair programmer that suggests code as you type","https://github.com/features/copilot","devtools","producthunt","2021-10-27"
+9,"AdCreative.ai","Generates high-converting marketing creatives using AI","https://www.adcreative.ai","marketing,ai","producthunt","2022-04-15"
+10,"Anyword","AI copywriting assistant for ads and landing pages","https://anyword.com","marketing,content","producthunt","2022-11-03"
 

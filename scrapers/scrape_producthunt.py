@@ -93,6 +93,17 @@ def scrape_producthunt():
         
         tools = []
         ai_keywords = ["ai", "artificial intelligence", "machine learning", "ml", "nlp", "neural", "deep learning"]
+        category_mapping = {
+            "fintech": "finance",
+            "developer-tools": "devtools",
+            "customer-support": "customer-support",
+            "content-marketing": "content",
+            "marketing": "marketing",
+            "productivity": "productivity",
+            "finance": "finance",
+            "ai": "ai",
+            "machine-learning": "ml",
+        }
         
         for edge in data.get("data", {}).get("posts", {}).get("edges", []):
             node = edge["node"]
@@ -107,25 +118,19 @@ def scrape_producthunt():
             is_ai = is_ai or any(keyword in " ".join(topics) for keyword in ai_keywords)
             
             if is_ai:
-                categories = [t["node"]["name"] for t in node.get("topics", {}).get("edges", [])]
-                category = categories[0].lower().replace(" ", "-") if categories else "general"
-                
-                # Map common categories
-                category_mapping = {
-                    "fintech": "finance",
-                    "developer-tools": "devtools",
-                    "customer-support": "customer-support",
-                    "content-marketing": "content",
-                    "marketing": "marketing"
-                }
-                category = category_mapping.get(category, category)
+                category_slugs = [topic.replace(" ", "-") for topic in topics]
+                normalized_categories = [category_mapping.get(slug, slug) for slug in category_slugs]
+                normalized_categories = sorted(set(normalized_categories))
+                category_str = ",".join(normalized_categories) if normalized_categories else "general"
+                primary_category = normalized_categories[0] if normalized_categories else "general"
                 
                 tool = {
                     "id": node.get("id", ""),
                     "name": node.get("name", ""),
                     "description": node.get("tagline", ""),
                     "url": node.get("website") or node.get("url", ""),
-                    "category": category,
+                    "category": category_str,
+                    "primary_category": primary_category,
                     "source": "producthunt",
                     "launch_date": node.get("createdAt", datetime.now().isoformat())
                 }
@@ -151,11 +156,19 @@ if __name__ == "__main__":
         if OUTPUT_CSV.exists():
             try:
                 existing_df = pd.read_csv(OUTPUT_CSV)
+                if not existing_df.empty and "primary_category" not in existing_df.columns:
+                    existing_df["primary_category"] = (
+                        existing_df["category"].astype(str).str.split(",").str[0].fillna("general")
+                    )
             except:
                 pass
         
         # Create new DataFrame
         new_df = pd.DataFrame(tools)
+        if not new_df.empty and "primary_category" not in new_df.columns:
+            new_df["primary_category"] = (
+                new_df["category"].astype(str).str.split(",").str[0].fillna("general")
+            )
         
         # Get existing URLs to avoid duplicates
         existing_urls = set(existing_df["url"].astype(str).tolist()) if not existing_df.empty else set()

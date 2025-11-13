@@ -109,7 +109,8 @@ def scrape_github_trending():
                         "name": repo_name,
                         "description": description or "GitHub repository",
                         "url": repo_url,
-                        "category": "devtools",
+                        "category": "devtools,github",
+                        "primary_category": "devtools",
                         "source": "github-trending",
                         "launch_date": datetime.now().isoformat()
                     }
@@ -140,11 +141,19 @@ if __name__ == "__main__":
         if OUTPUT_CSV.exists():
             try:
                 existing_df = pd.read_csv(OUTPUT_CSV)
+                if not existing_df.empty and "primary_category" not in existing_df.columns:
+                    existing_df["primary_category"] = (
+                        existing_df["category"].astype(str).str.split(",").str[0].fillna("general")
+                    )
             except:
                 pass
         
         # Create new DataFrame
         new_df = pd.DataFrame(tools)
+        if not new_df.empty and "primary_category" not in new_df.columns:
+            new_df["primary_category"] = (
+                new_df["category"].astype(str).str.split(",").str[0].fillna("general")
+            )
         
         # Get existing URLs to avoid duplicates
         existing_urls = set(existing_df["url"].astype(str).tolist()) if not existing_df.empty else set()
