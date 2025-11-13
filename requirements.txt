@@ -1,0 +1,20 @@
+# Core dependencies for Streamlit app
+streamlit>=1.28.0
+pandas>=2.0.0
+
+# Web scraping
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+
+# AI/ML (optional - can skip torch for lighter install)
+# Uncomment the next two lines if you want AI summarization
+# transformers>=4.30.0
+# torch>=2.0.0
+
+# Environment variables
+python-dotenv>=1.0.0
+
+# Note: If you want to skip the large torch/transformers install,
+# you can remove those lines and the app will use template-based summaries.
+# The app will work fine without them!
+
