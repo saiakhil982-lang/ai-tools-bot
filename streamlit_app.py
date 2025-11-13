@@ -45,6 +45,27 @@ DATA_DIR = Path("data")
 SAMPLE_CSV = DATA_DIR / "sample_ai_tools.csv"
 TOOLS_CSV = DATA_DIR / "tools.csv"
 
+SMALL_TALK_PATTERNS = [
+    ("hello", "👋 Hi there! I'm your AI tools guide. Ask me about any category like finance, content, or customer support and I'll suggest helpful apps."),
+    ("hi", "👋 Hi there! I'm your AI tools guide. Ask me about any category like finance, content, or customer support and I'll suggest helpful apps."),
+    ("hey", "👋 Hey! I can help you discover new AI tools. Try asking for finance tools or content creation helpers."),
+    ("good morning", "🌅 Good morning! Ready to explore AI tools? Mention a category and I'll gather some for you."),
+    ("good evening", "🌆 Good evening! Tell me what you want to achieve and I'll recommend some AI helpers."),
+    ("thank", "😊 You're welcome! Let me know if you want recommendations for another AI tool category."),
+    ("thanks", "😊 You're welcome! Let me know if you want recommendations for another AI tool category."),
+    ("who are you", "I'm a friendly Streamlit chatbot that tracks AI tools and suggests the best matches for your needs."),
+    ("what can you do", "I keep an up-to-date list of AI tools and can suggest options by category like finance, marketing, or support."),
+    ("help", "Need help? Try asking something like 'Show me finance tools' or 'Which tools help with content creation?'"),
+]
+
+def get_small_talk_response(prompt_text):
+    """Return a friendly response for greetings or general chat."""
+    text = prompt_text.lower()
+    for pattern, response in SMALL_TALK_PATTERNS:
+        if pattern in text:
+            return response
+    return None
+
 def get_ai_tools(category=None, q=None):
     """
     Fetch AI tools from Product Hunt API or CSV fallback.
@@ -357,6 +378,8 @@ if prompt := st.chat_input("Ask about AI tools (e.g., 'Show me finance tools' or
     with st.chat_message("user"):
         st.markdown(prompt)
     
+    assistant_reply = ""
+    
     # Process query
     with st.chat_message("assistant"):
         with st.spinner("Searching for AI tools..."):
@@ -386,6 +409,7 @@ if prompt := st.chat_input("Ask about AI tools (e.g., 'Show me finance tools' or
             if not tools_df.empty:
                 # Generate summary
                 summary = summarize_tools(tools_df, prompt)
+                assistant_reply = summary
                 st.markdown(summary)
                 
                 st.markdown("---")
@@ -393,12 +417,21 @@ if prompt := st.chat_input("Ask about AI tools (e.g., 'Show me finance tools' or
                 # Display tools
                 render_tools_list(tools_df)
             else:
-                st.markdown("I couldn't find any tools matching your query. Try asking about a specific category like 'finance tools' or 'content creation tools'.")
+                small_talk = get_small_talk_response(prompt)
+                if small_talk:
+                    assistant_reply = small_talk
+                    st.markdown(small_talk)
+                else:
+                    assistant_reply = (
+                        "I couldn't find any tools matching your query yet. "
+                        "Try asking about a specific category like 'finance tools', 'content tools', or 'customer support tools'."
+                    )
+                    st.markdown(assistant_reply)
     
     # Add assistant response to history
     st.session_state.messages.append({
         "role": "assistant",
-        "content": f"Found {len(tools_df)} tool(s) matching your query." if not tools_df.empty else "No tools found."
+        "content": assistant_reply or "I'm here to help whenever you're ready to explore AI tools!"
     })
 
 # Footer
