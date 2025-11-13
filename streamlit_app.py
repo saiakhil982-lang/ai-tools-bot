@@ -402,9 +402,10 @@ if prompt := st.chat_input("Ask about AI tools (e.g., 'Show me finance tools' or
             
             # Use detected category or sidebar filter
             search_category = detected_category or category_filter
+            search_query = None if search_category else prompt
             
             # Search for tools
-            tools_df = get_ai_tools(category=search_category, q=prompt)
+            tools_df = get_ai_tools(category=search_category, q=search_query)
             
             if not tools_df.empty:
                 # Generate summary
